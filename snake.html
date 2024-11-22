@@ -9,15 +9,13 @@
       }
       .snake {
         position: absolute;
-        width: 30px;
-        height: 30px;
-        top: 200px;
-        left: 150px;
         background-color: blueviolet;
         border-radius: 10px;
       }
       .food {
         position: absolute;
+        background-color: rgb(223, 33, 33);
+        border-radius: 20%;
       }
     </style>
   </head>
@@ -40,18 +38,23 @@
     </div>
 
     <script>
-      let headTop = 5;
-      let headLeft = 5;
+      let headY = 5;
+      let headX = 4;
+
+      let score = 0;
+
+      let foodX;
+      let foodY;
+
       let direction = "right";
+      let nextDirection = direction;
+
       let tails = [
         { x: 2, y: 5 },
         { x: 3, y: 5 },
         { x: 4, y: 5 },
       ];
       let intervalId = null;
-
-      let foodX;
-      let foodY;
 
       const config = {
         size: 20,
@@ -64,81 +67,78 @@
       boardEl.style.height = config.height * config.size + "px";
 
       function goUp() {
-        headTop = headTop - 1;
-        if (headTop < 0) {
-          headTop = config.height - 1;
+        headY = headY - 1;
+        if (headY < 0) {
+          headY = config.height - 1;
         }
-        render();
       }
 
       function goDown() {
-        headTop = headTop + 1;
-        if (headTop === config.height) {
-          headTop = 0;
+        headY = headY + 1;
+        if (headY === config.height) {
+          headY = 0;
         }
-        render();
+      }
+
+      function changeDirection(newDirection) {
+        if (direction === "up" || direction === "down") {
+          if (newDirection === "right" || newDirection === "left") {
+            nextDirection = newDirection;
+          }
+        } else if (direction === "right" || direction === "left") {
+          if (newDirection === "up" || newDirection === "down") {
+            nextDirection = newDirection;
+          }
+        }
       }
 
       function goRight() {
-        headLeft = headLeft + 1;
-        render();
+        headX = headX + 1;
       }
 
       function goLeft() {
-        headLeft = headLeft - 1;
-        render();
+        headX = headX - 1;
       }
 
       function startGame() {
+        generatefood();
         if (!intervalId) {
-          intervalId = setInterval(gameLoop, 300);
+          intervalId = setInterval(gameLoop, 100);
         }
       }
 
       function generatefood() {
-        const foodY = math.floor(math.random() * config.width);
-        const foodX = math.floor(math.random() * config.height);
-        console.log({ foodX, foodY });
+        foodX = Math.floor(Math.random() * config.width);
+        foodY = Math.floor(Math.random() * config.height);
+      }
+
+      function reset() {
+        headY = 5;
+        headX = 4;
+        direction = "right";
+        nextDirection = direction;
+        tails = [
+          { x: 2, y: 5 },
+          { x: 3, y: 5 },
+          { x: 4, y: 5 },
+        ];
+        generatefood();
+      }
+
+      function restartGame() {
+        reset();
+        startGame();
       }
 
       function pauseGame() {
         clearInterval(intervalId);
         intervalId = null;
       }
-      function reset() {
-        headTop = 5;
-        headLeft = 5;
-        direction = "right";
-        tails = [
-          { x: 2, y: 5 },
-          { x: 3, y: 5 },
-          { x: 4, y: 5 },
-        ];
-      }
-      function restartGame() {
-        reset();
-        startGame();
-      }
-
-      function changeDirection(newDirection) {
-        if (direction === "up" || direction === "down") {
-          if (newDirection === "right" || newDirection === "left") {
-            direction = newDirection;
-          }
-        } else if (direction === "right" || direction === "left") {
-          if (newDirection === "up" || newDirection === "down") {
-            direction = newDirection;
-          }
-        }
-      }
 
       // setInterval (gameLoop, 300);
 
       function gameLoop() {
-        console.log({ direction });
-        tails.push({ x: headLeft, y: headTop });
-        tails.shift();
-        switch (direction) {
+        switch (nextDirection) {
           case "up":
             goUp();
             break;
@@ -152,7 +152,24 @@
             goLeft();
             break;
         }
+        tails.push({ x: headX, y: headY });
+        tails.shift();
+
+        for (let i = 0; i < tails.length - 1; i++) {
+          if (headX === tails[i].x && headY === tails[i].y) {
+            alert("Game over");
+            restartGame();
+          }
+        }
+        if (headX === foodX && headY === foodY) {
+          tails.push({ x: headX, y: headY });
+          generatefood();
+          score += 5;
+        }
+        direction = nextDirection;
+        render();
       }
+
       function listenKeys(event) {
         const key = event.key;
         switch (key) {
@@ -176,6 +193,12 @@
       function render() {
         let tailsHtml = "";
 
+        const foodHtml = `<div class="food" style="width: ${
+          1 * config.size
+        }px; height: ${1 * config.size}px; top: ${
+          foodY * config.size
+        }px; left: ${foodX * config.size}px"> </div>`;
+
         for (let i = 0; i < tails.length; i++) {
           tailsHtml += `<div class = "snake" style = "width: ${
             1 * config.size
@@ -183,17 +206,9 @@
             tails[i].y * config.size
           }px; left: ${tails[i].x * config.size}px"}> </div>`;
         }
-        // const headHtml = `<div class= "snake" style = "width: ${
-        //   1 * config.size
-        // }px; height: ${1 * config.size}px; top: ${
-        //   headTop * config.size
-        // }px; left: ${headLeft * config.size}px"}> </div>`;
 
-        const snakeHtml = ` ${tailsHtml}`;
-        boardEl.innerHTML = snakeHtml;
+        boardEl.innerHTML = `${foodHtml} ${tailsHtml}`;
       }
-
-      render();
     </script>
   </body>
 </html>
